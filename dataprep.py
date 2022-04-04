@@ -4,9 +4,21 @@ import pandas as pd
 import env
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
+import pandas as pd
+import env
+
+# ignore warnings
+import warnings
+warnings.filterwarnings("ignore")
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
+
+
 
 from env import user, password, host
 
@@ -54,10 +66,16 @@ def get_zillow_data(use_cache=True):
    
     return df
 
-    
+def handle_missing_values(df, prop_required_column = .5, prop_required_row = .70):
+    threshold = int(round(prop_required_column*len(df.index),0))
+    df.dropna(axis=1, thresh=threshold, inplace=True)
+    threshold = int(round(prop_required_row*len(df.columns),0))
+    df.dropna(axis=0, thresh=threshold, inplace=True)
+    return df
 
-
-
+def remove_columns(df, cols_to_remove):  
+    df = df.drop(columns=cols_to_remove)
+    return df
 
 
 def wrangle_zillow():
@@ -96,4 +114,41 @@ def wrangle_zillow():
     # Just to be sure we caught all nulls, drop them here
     df = df.dropna()
     
+    #rename the columns
+    df = df.rename(columns = {'bedroomcnt':'bedrooms', 
+                              'bathroomcnt':'bathrooms', 
+                              'calculatedfinishedsquarefeet':'area',
+                              'taxvaluedollarcnt':'tax_value', 
+                              'yearbuilt':'year_built'})
+    
     return df
+
+def remove_outliers(df, k, col_list):
+    ''' remove outliers from a list of columns in a dataframe 
+        and return that dataframe
+    '''
+
+    for col in col_list:
+
+        q1, q3 = df[col].quantile([.25, .75])  # get quartiles
+        
+        iqr = q3 - q1   # calculate interquartile range
+        
+        upper_bound = q3 + k * iqr   # get upper bound
+        lower_bound = q1 - k * iqr   # get lower bound
+
+        # return dataframe without outliers
+        
+        df = df[(df[col] > lower_bound) & (df[col] < upper_bound)]
+        
+        
+    return df
+    
+    
+def removed_outliers(df):
+    
+    df = remove_outliers(df, 1.5, [ 'bathrooms','bedrooms','area'])
+    train_validate, test = train_test_split(df, test_size=.2, random_state=123)
+    train, validate = train_test_split(train_validate, test_size=.3, random_state=123)
+    
+    return train, validate, test
