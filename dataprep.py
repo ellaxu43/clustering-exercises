@@ -37,7 +37,6 @@ def get_zillow_data(use_cache=True):
     print('Acquiring data from SQL database')
     query = """SELECT prop.*, 
        pred.logerror, 
-       pred.transactiondate, 
        air.airconditioningdesc, 
        arch.architecturalstyledesc, 
        build.buildingclassdesc, 
@@ -91,11 +90,8 @@ def wrangle_zillow():
 
     # Handle missing values i.e. drop columns and rows based on a threshold
     df = handle_missing_values(df)
-    
-    # Add column for counties
-    df['county'] = np.where(df.fips == 6037, 'Los_Angeles',
-                           np.where(df.fips == 6059, 'Orange', 
-                                   'Ventura'))    
+                        
+                       
     # drop columns not needed
     df = remove_columns(df, ['id',
        'calculatedbathnbr', 'finishedsquarefeet12', 'fullbathcnt', 'heatingorsystemtypeid'
